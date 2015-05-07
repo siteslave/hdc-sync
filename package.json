@@ -14,7 +14,7 @@
     "hdc",
     "sync"
   ],
-  "author": "Satit Rianpit",
+  "author": "Satit Rianpit <rianpit@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/siteslave/hdc-sync/issues"
