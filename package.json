@@ -1,0 +1,30 @@
+{
+  "name": "hdc-sync",
+  "version": "0.0.1",
+  "description": "HDC Sync system",
+  "main": "./lib/hdc-sync.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/siteslave/hdc-sync.git"
+  },
+  "keywords": [
+    "hdc",
+    "sync"
+  ],
+  "author": "Satit Rianpit",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/siteslave/hdc-sync/issues"
+  },
+  "homepage": "https://github.com/siteslave/hdc-sync#readme",
+  "dependencies": {
+    "knex": "^0.8.3",
+    "lodash": "^3.8.0",
+    "minimist": "^1.1.1",
+    "moment": "^2.10.2",
+    "mysql": "^2.6.2"
+  }
+}
