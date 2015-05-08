@@ -6,12 +6,13 @@
 var argv = require('minimist')(process.argv.slice(2));
 // Main Sync program
 var Sync = require('../lib/hdc-sync');
+var Server = require('../lib/server');
 
 //console.dir(argv);
 
 // Show help
 if (argv.help) {
-
+    Sync.help();
 }
 
 // Set display log to console
@@ -26,5 +27,8 @@ if (argv.test) {
 
 // Running server mode
 if (argv.server) {
-    console.log('Listening on port: 3333');
+    var port = argv.port || 8888;
+    var host = argv.host || '127.0.0.1';
+
+    Server.start(host, port);
 }

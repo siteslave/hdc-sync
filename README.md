@@ -1,12 +1,12 @@
-#hdc-sync
+# hdc-sync
 
 Health Data Center Sync system.
 
-#Install
+# Install
 
 `npm install hdc-sync -g`
 
-#Using
+# Using
 
 `hdc-sync --help`
 

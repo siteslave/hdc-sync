@@ -21,10 +21,12 @@
   },
   "homepage": "https://github.com/siteslave/hdc-sync#readme",
   "dependencies": {
+    "express": "^4.12.3",
     "knex": "^0.8.3",
     "lodash": "^3.8.0",
     "minimist": "^1.1.1",
     "moment": "^2.10.2",
+    "multer": "^0.1.8",
     "mysql": "^2.6.2"
   },
   "perferGlogal": true,
