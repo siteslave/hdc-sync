@@ -1,6 +1,6 @@
 {
   "name": "hdc-sync",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "HDC Sync system",
   "main": "./lib/hdc-sync.js",
   "scripts": {
@@ -26,5 +26,9 @@
     "minimist": "^1.1.1",
     "moment": "^2.10.2",
     "mysql": "^2.6.2"
+  },
+  "perferGlogal": true,
+  "bin": {
+    "hdc-sync": "./bin/http-sync"
   }
 }
