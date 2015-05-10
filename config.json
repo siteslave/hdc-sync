@@ -1,0 +1,33 @@
+{
+  "provinceCode": "44",
+  "mode": "client",
+  "config": {
+    "server": {
+      "address": "127.0.0.1",
+      "port": 8888,
+      "extractPath": "/var/tmp/hdc-sync/extracted",
+      "uploadPath": "/var/tmp/hdc-sync/uploaded",
+      "logPath": "/var/tmp/hdc-sync/hdc-sync-serv.log"
+    },
+    "client": {
+      "server": {
+        "address": "127.0.0.1",
+        "port": 8888,
+        "province_code": "44",
+        "key": "testingkey"
+      },
+      "hdc": {
+        "address": "127.0.0.1",
+        "port": 3306,
+        "database": "icare_lite",
+        "user": "icare_lite",
+        "password": "icare_lite"
+      },
+      "exportPath": "/var/tmp/hdc-sync/export",
+      "backupPath": "/var/tmp/hdc-sync/backup",
+      "outboxPath": "/var/tmp/hdc-sync/outbox",
+      "logPath": "/var/tmp/hdc-sync/hdc-sync.log"
+    }
+  }
+
+}
