@@ -19,43 +19,31 @@ var configData = null;
 
 program
     .version('0.0.7')
+    .usage('[options] ... [file]')
     .option('-c, --config <file>', 'Specify configure file')
     .option('-t, --test', 'Testing connection')
     .option('-y, --year <year>', 'Year, exp: 2557, 2558')
+    .option('-n, --init', 'Initial configure file')
+    .option('-u, --upload <file>', 'Upload file')
     .parse(process.argv);
 
-if (program.config && !program.test) {
-    // Check configure file exists
-    fs.access(program.config, fs.R_OK, function (err) {
-        if (err) {
-            console.log(colors.bgBlack.yellow('No configure file found! '));
-            console.log(colors.blackBright(program.config));
-        } else {
+if (program.config) {
 
-            configData = Config.getConfig(program.config);
-            var year = program.year || moment().get('year') + 543;
-            // Get mode
+    if (program.upload) {
 
-            if (configData.mode == 'server') {
-                // create default folder
-                shell.mkdir('-p', configData.config.server.extractPath);
-                shell.mkdir('-p', configData.config.server.uploadPath);
-                // Start server mode
-                Server.init(configData);
+    }
 
-            } else if (configData.mode == 'client') {
+    if(program.test) {
 
-                shell.mkdir('-p', configData.config.client.exportPath);
-                shell.mkdir('-p', configData.config.client.outboxPath);
-                shell.mkdir('-p', configData.config.client.backupPath);
-                fse.ensureFileSync(configData.config.client.logPath);
-                console.log(colors.green('Starting with client mode...'));
+        fs.access(program.config, fs.R_OK, function (err) {
+            if (err) {
+                console.log(colors.bgBlack.yellow('No configure file found! '));
+                console.log(colors.blackBright(program.config));
+            } else {
 
-                /**
-                 * Todo
-                 * - Check HDC Connection
-                 * - Check Server Connection
-                 */
+                configData = Config.getConfig(program.config);
+
+                console.log('Testing connection.');
 
                 var hdcResult = true;
                 var serverResult = true;
@@ -82,27 +70,148 @@ if (program.config && !program.test) {
                         } else {
                             console.log('Testing Server connection...\t\t\t' + colors.red('FAILED'));
                         }
-
-                        if (serverResult && hdcResult) {
-                            Sync.startSync(configData, year);
-                        } else {
-                            console.log(colors.red('Connection failed, exit program...'));
-                            process.exit(1);
-                        }
                     });
-
-            } else {
-                console.log(colors.bgBlack.red('Please set running mode!'));
-                process.exit(1);
             }
+        });
 
+    } else if(program.upload) {
+        console.log(colors.green('Upload file'));
+        process.exit(0);
+    } else {
+
+        // Check configure file exists
+        fs.access(program.config, fs.R_OK, function (err) {
+            if (err) {
+                console.log(colors.bgBlack.yellow('No configure file found! '));
+                console.log(colors.blackBright(program.config));
+            } else {
+
+                configData = Config.getConfig(program.config);
+                var year = program.year || moment().get('year') + 543;
+                // Get mode
+
+                if (configData.mode == 'server') {
+                    // create default folder
+                    shell.mkdir('-p', configData.config.server.extractPath);
+                    shell.mkdir('-p', configData.config.server.uploadPath);
+                    // Start server mode
+                    Server.init(configData);
+
+                } else if (configData.mode == 'client') {
+
+                    shell.mkdir('-p', configData.config.client.exportPath);
+                    shell.mkdir('-p', configData.config.client.outboxPath);
+                    shell.mkdir('-p', configData.config.client.backupPath);
+                    fse.ensureFileSync(configData.config.client.logPath);
+                    console.log(colors.green('Starting with client mode...'));
+
+                    /**
+                     * Todo
+                     * - Check HDC Connection
+                     * - Check Server Connection
+                     */
+
+                    var hdcResult = true;
+                    var serverResult = true;
+
+                    Conn.testHDCConnection(configData.config.client.hdc)
+                        .then(function (resp) {
+
+                            hdcResult = resp;
+
+                            var testingUrl = 'http://' + configData.config.server.address + ':' + configData.config.server.port + '/status';
+                            return Conn.testServerConnection(testingUrl);
+
+                        }).then(function (resp) {
+                            serverResult = resp;
+
+                            if (hdcResult) {
+                                console.log('Testing HDC connection...\t\t\t' + colors.green('OK'));
+                            } else {
+                                console.log('Testing HDC connection...\t\t\t' + colors.red('FAILED'));
+                            }
+
+                            if (serverResult) {
+                                console.log('Testing Server connection...\t\t\t' + colors.green('OK'));
+                            } else {
+                                console.log('Testing Server connection...\t\t\t' + colors.red('FAILED'));
+                            }
+
+                            if (serverResult && hdcResult) {
+                                console.log(colors.green('Starting export data...'));
+                                Sync.startSync(configData, year);
+                            } else {
+                                console.log(colors.red('Connection failed, exit program...'));
+                                process.exit(1);
+                            }
+                        });
+
+                } else {
+                    console.log(colors.bgBlack.red('Please set running mode!'));
+                    process.exit(1);
+                }
+
+            }
+        });
+
+    }
+
+}
+
+if (program.init) {
+    // create init config
+    var cfg = {
+        "provinceCode": "44",
+        "mode": "client",
+        "config": {
+            "server": {
+                "address": "127.0.0.1",
+                "port": 8888,
+                "extractPath": "/var/tmp/hdc-sync/extracted",
+                "uploadPath": "/var/tmp/hdc-sync/uploaded",
+                "logPath": "/var/tmp/hdc-sync/hdc-sync-serv.log",
+                "dc": {
+                    "address": "127.0.0.1",
+                    "port": 3306,
+                    "database": "hdc",
+                    "user": "hdc",
+                    "password": "hdc"
+                }
+            },
+            "client": {
+                "server": {
+                    "address": "127.0.0.1",
+                    "port": 8888,
+                    "province_code": "44",
+                    "key": "testingkey"
+                },
+                "hdc": {
+                    "address": "127.0.0.1",
+                    "port": 3306,
+                    "database": "icare_lite",
+                    "user": "icare_lite",
+                    "password": "icare_lite"
+                },
+                "exportPath": "/var/tmp/hdc-sync/export",
+                "backupPath": "/var/tmp/hdc-sync/backup",
+                "outboxPath": "/var/tmp/hdc-sync/outbox",
+                "logPath": "/var/tmp/hdc-sync/hdc-sync.log"
+            }
+        }
+
+    };
+
+    fse.writeJson('./config.json', cfg, function (err) {
+        if (err) {
+            console.log(colors.red(err));
+            process.exit(1);
+        } else {
+            console.log(colors.green('Create configure file success.'));
+            process.exit(0);
         }
     });
 
-} else if(program.config && program.test) {
-    console.log('Testing connection.');
-} else {
-    console.log(colors.red('Please specify configuration file!'));
-    process.exit(1);
 }
+
+
 
