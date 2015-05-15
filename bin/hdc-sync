@@ -94,13 +94,26 @@ if (program.config) {
                             port = configData.config.client.server.port;
 
                         var uploadUrl = 'http://' + address + ':' + port + '/upload';
-                        console.log(colors.blue('Starting upload file...'));
+
+                        var dotCount = 0;
+
+                        setInterval(function () {
+                            process.stdout.clearLine();
+                            process.stdout.cursorTo(0);
+                            dotCount = (dotCount + 1) % 5;
+                            var dots = new Array(dotCount + 1).join('.');
+                            process.stdout.write("Uploading" + dots);
+                        }, 300);
 
                         Upload.doUpload(uploadUrl, program.upload)
                             .then(function () {
-                                console.log(colors.green.blink('Upload file successfully'));
+                                console.log('\n');
+                                console.log(colors.green.blink('OK'));
                                 process.exit(0);
                             }, function (err) {
+                                console.log('\n');
+                                console.log(colors.red.blink('FAILED'));
+                                console.log('\n');
                                 console.log(colors.red(err));
                                 process.exit(1);
                             });
