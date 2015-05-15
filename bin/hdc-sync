@@ -8,12 +8,17 @@ var fse = require('fs-extra');
 var shell = require('shelljs');
 var colors = require('cli-color');
 var moment = require('moment');
+var Q = require('q');
 // Main Sync program
 var Sync = require('../lib/hdc-sync');
 var Server = require('../lib/server');
 var Config = require('../lib/config');
 var Conn = require('../lib/connection');
+var Importor = require('../lib/hdc-import');
+var Upload = require('../lib/hdc-upload');
 //var hdc = require('../lib/hdc-export');
+
+require('q-foreach')(Q);
 
 var configData = null;
 
@@ -25,13 +30,10 @@ program
     .option('-y, --year <year>', 'Year, exp: 2557, 2558')
     .option('-n, --init', 'Initial configure file')
     .option('-u, --upload <file>', 'Upload file')
+    .option('-i, --import <file | directory>', 'Import file (Server mode)')
     .parse(process.argv);
 
 if (program.config) {
-
-    if (program.upload) {
-
-    }
 
     if(program.test) {
 
@@ -75,14 +77,44 @@ if (program.config) {
         });
 
     } else if(program.upload) {
-        console.log(colors.green('Upload file'));
-        process.exit(0);
+        fs.access(program.config, fs.R_OK, function (err) {
+            if (err) {
+                console.log(colors.bgBlack.yellow('Can not read configure file found! '));
+                console.log(colors.blackBright(program.config));
+                process.exit(1);
+            } else {
+                fs.access(program.upload, fs.R_OK, function (err) {
+
+                    if (err) {
+                        console.log(colors.red('File not found!'));
+                        process.exit(1);
+                    } else {
+                        var configData = Config.getConfig(program.config),
+                            address = configData.config.client.server.address,
+                            port = configData.config.client.server.port;
+
+                        var uploadUrl = 'http://' + address + ':' + port + '/upload';
+                        console.log(colors.blue('Starting upload file...'));
+
+                        Upload.doUpload(uploadUrl, program.upload)
+                            .then(function () {
+                                console.log(colors.green.blink('Upload file successfully'));
+                                process.exit(0);
+                            }, function (err) {
+                                console.log(colors.red(err));
+                                process.exit(1);
+                            });
+                    }
+
+                });
+            }
+        });
     } else {
 
         // Check configure file exists
         fs.access(program.config, fs.R_OK, function (err) {
             if (err) {
-                console.log(colors.bgBlack.yellow('No configure file found! '));
+                console.log(colors.bgBlack.yellow('Can not read configure file found! '));
                 console.log(colors.blackBright(program.config));
             } else {
 
@@ -94,8 +126,14 @@ if (program.config) {
                     // create default folder
                     shell.mkdir('-p', configData.config.server.extractPath);
                     shell.mkdir('-p', configData.config.server.uploadPath);
-                    // Start server mode
-                    Server.init(configData);
+
+                    if (program.import) {
+                        // Import file
+                        Importor.startImport(program.import, configData.config.server);
+                    } else {
+                        // Start server mode
+                        Server.init(configData.config.server);
+                    }
 
                 } else if (configData.mode == 'client') {
 
@@ -212,6 +250,3 @@ if (program.init) {
     });
 
 }
-
-
-
