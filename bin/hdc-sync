@@ -9,13 +9,16 @@ var shell = require('shelljs');
 var colors = require('cli-color');
 var moment = require('moment');
 var Q = require('q');
+var yaml = require('yamljs');
+var _ = require('lodash');
+
 // Main Sync program
 var Sync = require('../lib/hdc-sync');
 var Server = require('../lib/server');
 var Config = require('../lib/config');
 var Conn = require('../lib/connection');
 var Importor = require('../lib/hdc-import');
-var Upload = require('../lib/hdc-upload');
+var http = require('../lib/hdc-http');
 //var hdc = require('../lib/hdc-export');
 
 require('q-foreach')(Q);
@@ -23,13 +26,14 @@ require('q-foreach')(Q);
 var configData = null;
 
 program
-    .version('0.0.7')
+    .version('0.1.0')
     .usage('[options] ... [file]')
     .option('-c, --config <file>', 'Specify configure file')
     .option('-t, --test', 'Testing connection')
-    .option('-y, --year <year>', 'Year, exp: 2557, 2558')
-    .option('-n, --init', 'Initial configure file')
-    .option('-u, --upload <file>', 'Upload file')
+    .option('-s, --start <start> ', 'Start date, exp: 2014-10-01')
+    .option('-e, --end <end> ', 'End date, exp: 2014-10-01')
+    .option('-n, --init <client | server>', 'Initial configure file')
+    .option('-u, --upload <file>', 'Upload file (Client mode)')
     .option('-i, --import <file | directory>', 'Import file (Server mode)')
     .parse(process.argv);
 
@@ -45,34 +49,41 @@ if (program.config) {
 
                 configData = Config.getConfig(program.config);
 
-                console.log('Testing connection.');
+                if (configData.mode != 'client') {
+                    console.log('Testing mode for client only!');
+                    process.exit(1);
+                } else {
+                    console.log(colors.blue('Testing connection.'));
 
-                var hdcResult = true;
-                var serverResult = true;
+                    var hdcResult = true;
+                    var serverResult = true;
 
-                Conn.testHDCConnection(configData.config.client.hdc)
-                    .then(function (resp) {
+                    Conn.testHDCConnection(configData.hdc)
+                        .then(function (resp) {
 
-                        hdcResult = resp;
+                            hdcResult = resp;
 
-                        var testingUrl = 'http://' + configData.config.server.address + ':' + configData.config.server.port + '/status';
-                        return Conn.testServerConnection(testingUrl);
+                            var testingUrl = 'http://' + configData.server.address + ':' + configData.server.port + '/status';
+                            return Conn.testServerConnection(testingUrl);
 
-                    }).then(function (resp) {
-                        serverResult = resp;
+                        }).then(function (resp) {
+                            serverResult = resp;
 
-                        if (hdcResult) {
-                            console.log('Testing HDC connection...\t\t\t' + colors.green('OK'));
-                        } else {
-                            console.log('Testing HDC connection...\t\t\t' + colors.red('FAILED'));
-                        }
+                            if (hdcResult) {
+                                console.log('Testing HDC connection...\t\t\t' + colors.green('OK'));
+                            } else {
+                                console.log('Testing HDC connection...\t\t\t' + colors.red('FAILED'));
+                            }
 
-                        if (serverResult) {
-                            console.log('Testing Server connection...\t\t\t' + colors.green('OK'));
-                        } else {
-                            console.log('Testing Server connection...\t\t\t' + colors.red('FAILED'));
-                        }
-                    });
+                            if (serverResult) {
+                                console.log('Testing Server connection...\t\t\t' + colors.green('OK'));
+                            } else {
+                                console.log('Testing Server connection...\t\t\t' + colors.red('FAILED'));
+                            }
+
+                        });
+                }
+
             }
         });
 
@@ -89,34 +100,39 @@ if (program.config) {
                         console.log(colors.red('File not found!'));
                         process.exit(1);
                     } else {
-                        var configData = Config.getConfig(program.config),
-                            address = configData.config.client.server.address,
-                            port = configData.config.client.server.port;
+                        var configData = Config.getConfig(program.config);
 
-                        var uploadUrl = 'http://' + address + ':' + port + '/upload';
+                        if (configData.mode == 'client') {
+                            var address = configData.server.address,
+                                port = configData.server.port;
 
-                        var dotCount = 0;
+                            var uploadUrl = 'http://' + address + ':' + port + '/upload';
 
-                        setInterval(function () {
-                            process.stdout.clearLine();
-                            process.stdout.cursorTo(0);
-                            dotCount = (dotCount + 1) % 5;
-                            var dots = new Array(dotCount + 1).join('.');
-                            process.stdout.write("Uploading" + dots);
-                        }, 300);
+                            var dotCount = 0;
 
-                        Upload.doUpload(uploadUrl, program.upload)
-                            .then(function () {
-                                console.log('\n');
-                                console.log(colors.green.blink('OK'));
-                                process.exit(0);
-                            }, function (err) {
-                                console.log('\n');
-                                console.log(colors.red.blink('FAILED'));
-                                console.log('\n');
-                                console.log(colors.red(err));
-                                process.exit(1);
-                            });
+                            setInterval(function () {
+                                process.stdout.clearLine();
+                                process.stdout.cursorTo(0);
+                                dotCount = (dotCount + 1) % 5;
+                                var dots = new Array(dotCount + 1).join('.');
+                                process.stdout.write("Uploading" + dots);
+                            }, 300);
+
+                            http.doUpload(uploadUrl, program.upload)
+                                .then(function () {
+                                    console.log('\n');
+                                    console.log(colors.green.blink('OK'));
+                                    process.exit(0);
+                                }, function (err) {
+                                    console.log('\n');
+                                    console.log(colors.red.blink('FAILED'));
+                                    console.log('\n');
+                                    console.log(colors.red(err));
+                                    process.exit(1);
+                                });
+                        } else {
+                            console.log(colors.red('Can\'t run in server mode!'));
+                        }
                     }
 
                 });
@@ -137,23 +153,24 @@ if (program.config) {
 
                 if (configData.mode == 'server') {
                     // create default folder
-                    shell.mkdir('-p', configData.config.server.extractPath);
-                    shell.mkdir('-p', configData.config.server.uploadPath);
+                    shell.mkdir('-p', configData.extractPath);
+                    shell.mkdir('-p', configData.uploadPath);
 
                     if (program.import) {
                         // Import file
-                        Importor.startImport(program.import, configData.config.server);
+                        Importor.startImport(program.import, configData);
                     } else {
                         // Start server mode
-                        Server.init(configData.config.server);
+                        Server.init(configData);
                     }
 
                 } else if (configData.mode == 'client') {
 
-                    shell.mkdir('-p', configData.config.client.exportPath);
-                    shell.mkdir('-p', configData.config.client.outboxPath);
-                    shell.mkdir('-p', configData.config.client.backupPath);
-                    fse.ensureFileSync(configData.config.client.logPath);
+                    shell.mkdir('-p', configData.exportPath);
+                    shell.mkdir('-p', configData.outboxPath);
+                    shell.mkdir('-p', configData.backupPath);
+                    fse.ensureFileSync(configData.logPath);
+
                     console.log(colors.green('Starting with client mode...'));
 
                     /**
@@ -165,12 +182,12 @@ if (program.config) {
                     var hdcResult = true;
                     var serverResult = true;
 
-                    Conn.testHDCConnection(configData.config.client.hdc)
+                    Conn.testHDCConnection(configData.hdc)
                         .then(function (resp) {
 
                             hdcResult = resp;
 
-                            var testingUrl = 'http://' + configData.config.server.address + ':' + configData.config.server.port + '/status';
+                            var testingUrl = 'http://' + configData.server.address + ':' + configData.server.port + '/status';
                             return Conn.testServerConnection(testingUrl);
 
                         }).then(function (resp) {
@@ -189,8 +206,50 @@ if (program.config) {
                             }
 
                             if (serverResult && hdcResult) {
-                                console.log(colors.green('Starting export data...'));
-                                Sync.startSync(configData, year);
+                                // get start, end date
+                                var startDate = null;
+                                var endDate = null;
+
+                                // Get active year
+                                var activeYear = configData.activeYear;
+                                var idxActiveYear = _.findIndex(configData.year, {id: activeYear});
+
+                                var cfgStartDate = configData.year[idxActiveYear].start;
+                                var cfgEndDate = configData.year[idxActiveYear].end;
+
+                                if (program.start && program.end) {
+                                    if (!moment(program.start, 'YYYY-MM-DD').isValid()) {
+                                        console.log(colors.red('Invalid start date, use default date.'));
+                                        startDate = (moment().get('year') - 1) + '-10-01';
+                                    } else {
+                                        startDate = program.start;
+                                    }
+
+                                    if (!moment(program.end, 'YYYY-MM-DD').isValid()) {
+                                        console.log(colors.red('Invalid end date, use default date.'));
+                                        endDate = moment().get('year') + '-09-30';
+                                    } else {
+                                        endDate = program.end;
+                                    }
+                                } else {
+
+                                    if (!moment(cfgStartDate, 'YYYY-MM-DD').isValid()) {
+                                        console.log(colors.red('Invalid start date, use default date.'));
+                                        startDate = (moment().get('year') - 1) + '-10-01';
+                                    } else {
+                                        startDate = cfgStartDate;
+                                    }
+
+                                    if (!moment(cfgEndDate, 'YYYY-MM-DD').isValid()) {
+                                        console.log(colors.red('Invalid end date, use default date.'));
+                                        endDate = moment().get('year') + '-09-30';
+                                    } else {
+                                        endDate = cfgEndDate;
+                                    }
+                                }
+
+                                Sync.startSync(configData, startDate, endDate, activeYear);
+
                             } else {
                                 console.log(colors.red('Connection failed, exit program...'));
                                 process.exit(1);
@@ -211,55 +270,80 @@ if (program.config) {
 
 if (program.init) {
     // create init config
-    var cfg = {
-        "provinceCode": "44",
-        "mode": "client",
-        "config": {
-            "server": {
-                "address": "127.0.0.1",
-                "port": 8888,
-                "extractPath": "/var/tmp/hdc-sync/extracted",
-                "uploadPath": "/var/tmp/hdc-sync/uploaded",
-                "logPath": "/var/tmp/hdc-sync/hdc-sync-serv.log",
-                "dc": {
-                    "address": "127.0.0.1",
-                    "port": 3306,
-                    "database": "hdc",
-                    "user": "hdc",
-                    "password": "hdc"
-                }
-            },
-            "client": {
-                "server": {
-                    "address": "127.0.0.1",
-                    "port": 8888,
-                    "province_code": "44",
-                    "key": "testingkey"
-                },
-                "hdc": {
-                    "address": "127.0.0.1",
-                    "port": 3306,
-                    "database": "icare_lite",
-                    "user": "icare_lite",
-                    "password": "icare_lite"
-                },
-                "exportPath": "/var/tmp/hdc-sync/export",
-                "backupPath": "/var/tmp/hdc-sync/backup",
-                "outboxPath": "/var/tmp/hdc-sync/outbox",
-                "logPath": "/var/tmp/hdc-sync/hdc-sync.log"
+    if (program.init == 'server') {
+
+        var cfg = {
+            mode: "server",
+            address: "127.0.0.1",
+            port: 8888,
+            extractPath: "./tmp/hdc-sync/extracted",
+            uploadPath: "./tmp/hdc-sync/uploaded",
+            logPath: "./tmp/hdc-sync/hdc-sync-server.log",
+            sqlPath: "./tmp/hdc-sync/sql.yaml",
+            dc: {
+                host: "127.0.0.1",
+                port: 3306,
+                database: "hdc",
+                user: "hdc",
+                password: "hdc"
             }
-        }
+        };
 
-    };
+        var cfgYaml = yaml.stringify(cfg, 4);
 
-    fse.writeJson('./config.json', cfg, function (err) {
-        if (err) {
-            console.log(colors.red(err));
-            process.exit(1);
-        } else {
-            console.log(colors.green('Create configure file success.'));
-            process.exit(0);
-        }
-    });
+        fs.writeFile('./config-server.yaml', cfgYaml, function (err) {
+            if (err) {
+                console.log(colors.red(err));
+                process.exit(1);
+            } else {
+                console.log(colors.green('Create configure file success.'));
+                process.exit(0);
+            }
+        });
+
+    } else {
+
+        var cfg = {
+            mode: "client",
+            provCode: "44",
+            server: {
+                address: "127.0.0.1",
+                port: 8888,
+                key: "1234567890"
+            },
+            hdc: {
+                host: "127.0.0.1",
+                port: 3306,
+                database: "hdc",
+                user: "hdc",
+                passwor: "hdc"
+            },
+            activeYear: "2558",
+            year: [
+                { id: "2557", start: "2013-10-01", end: "2014-09-30" },
+                { id: "2558", start: "2014-10-01", end: "2015-09-30" },
+                { id: "2559", start: "2015-10-01", end: "2016-09-30" }
+            ],
+
+            exportPath: "./tmp/hdc-sync/export",
+            backupPath: "./tmp/hdc-sync/backup",
+            outboxPath: "./tmp/hdc-sync/outbox",
+            logPath: "./tmp/hdc-sync/hdc-sync.log"
+
+        };
+
+        var cfgYaml = yaml.stringify(cfg, 4);
+
+        fs.writeFile('./config-client.yaml', cfgYaml, function (err) {
+            if (err) {
+                console.log(colors.red(err));
+                process.exit(1);
+            } else {
+                console.log(colors.green('Create configure file success.'));
+                process.exit(0);
+            }
+        });
+
+    }
 
 }
