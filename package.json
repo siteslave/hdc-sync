@@ -27,7 +27,6 @@
     "express": "^4.12.3",
     "fs-extra": "^0.18.2",
     "fs-finder": "^1.8.0",
-    "js-yaml": "^3.3.1",
     "jsonfile": "^2.0.0",
     "knex": "^0.8.3",
     "lodash": "^3.8.0",
@@ -40,8 +39,6 @@
     "q-foreach": "0.0.3",
     "random-js": "^1.0.4",
     "request": "^2.55.0",
-    "request-progress": "^0.3.1",
-    "request-promise": "^0.4.2",
     "shelljs": "^0.4.0",
     "string-template": "^0.2.1",
     "yamljs": "^0.2.3"
