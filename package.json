@@ -1,6 +1,6 @@
 {
   "name": "hdc-sync",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "HDC Sync system",
   "main": "./lib/hdc-sync.js",
   "scripts": {
@@ -24,6 +24,7 @@
     "adm-zip": "^0.4.7",
     "cli-color": "^1.0.0",
     "commander": "^2.8.1",
+    "download": "^4.1.2",
     "express": "^4.12.3",
     "fs-extra": "^0.18.2",
     "fs-finder": "^1.8.0",
@@ -43,7 +44,7 @@
     "string-template": "^0.2.1",
     "yamljs": "^0.2.3"
   },
-  "perferGlogal": true,
+  "perferGlobal": true,
   "bin": {
     "hdc-sync": "./bin/hdc-sync"
   }

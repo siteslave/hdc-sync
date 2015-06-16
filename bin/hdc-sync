@@ -18,6 +18,7 @@ var Server = require('../lib/server');
 var Config = require('../lib/config');
 var Conn = require('../lib/connection');
 var Importor = require('../lib/hdc-import');
+var hdcExport = require('../lib/hdc-export');
 var http = require('../lib/hdc-http');
 //var hdc = require('../lib/hdc-export');
 
@@ -108,28 +109,58 @@ if (program.config) {
 
                             var uploadUrl = 'http://' + address + ':' + port + '/upload';
 
-                            var dotCount = 0;
+                            var connection = {
+                                host: configData.hdc.host.toString(),
+                                port: configData.hdc.port.toString(),
+                                database: configData.hdc.database.toString(),
+                                user: configData.hdc.user.toString(),
+                                password: configData.hdc.password.toString()
+                            };
 
-                            setInterval(function () {
-                                process.stdout.clearLine();
-                                process.stdout.cursorTo(0);
-                                dotCount = (dotCount + 1) % 5;
-                                var dots = new Array(dotCount + 1).join('.');
-                                process.stdout.write("Uploading" + dots);
-                            }, 300);
+                            var db = require('knex')({
+                                client: 'mysql',
+                                connection: connection,
+                                pool: {
+                                    min: 0,
+                                    max: 500
+                                },
+                                debug: false
+                            });
+                            //
+                            // db('sys_config')
+                            //     .select('provincecode')
+                            //     .then(function (rows) {
+                            //         console.log(rows[0].provincecode);
+                            //         process.exit(0);
+                            //     })
+                            //     .catch(function (err) {
+                            //         console.log(err);
+                            //         process.exit(0);
+                            //     });
 
-                            http.doUpload(uploadUrl, program.upload)
-                                .then(function () {
-                                    console.log('\n');
-                                    console.log(colors.green.blink('OK'));
-                                    process.exit(0);
+                            //console.log(typeof configData.hdc.host);
+                            //process.exit(0);
+
+                            hdcExport.getProvinceCode(db)
+                                .then(function (provCode) {
+                                    http.doUpload(uploadUrl, program.upload, provCode)
+                                        .then(function () {
+                                            console.log('\n');
+                                            console.log(colors.green.blink('OK'));
+                                            process.exit(0);
+                                        }, function (err) {
+                                            console.log('\n');
+                                            console.log(colors.red.blink('FAILED'));
+                                            console.log('\n');
+                                            console.log(colors.red(err));
+                                            process.exit(1);
+                                        });
                                 }, function (err) {
-                                    console.log('\n');
-                                    console.log(colors.red.blink('FAILED'));
-                                    console.log('\n');
                                     console.log(colors.red(err));
                                     process.exit(1);
                                 });
+
+
                         } else {
                             console.log(colors.red('Can\'t run in server mode!'));
                         }
@@ -171,7 +202,7 @@ if (program.config) {
                     shell.mkdir('-p', configData.backupPath);
                     fse.ensureFileSync(configData.logPath);
 
-                    console.log(colors.green('Starting with client mode...'));
+                    console.log(colors.green('Starting with ') + colors.red('client mode.'));
 
                     /**
                      * Todo
@@ -254,6 +285,9 @@ if (program.config) {
                                 console.log(colors.red('Connection failed, exit program...'));
                                 process.exit(1);
                             }
+                        }, function (err) {
+                            console.log(colors.red('Connection failed, exit program...'));
+                            process.exit(1);
                         });
 
                 } else {
@@ -279,7 +313,7 @@ if (program.init) {
             extractPath: "./tmp/hdc-sync/extracted",
             uploadPath: "./tmp/hdc-sync/uploaded",
             logPath: "./tmp/hdc-sync/hdc-sync-server.log",
-            sqlPath: "./tmp/hdc-sync/sql.yaml",
+            publicPath: "./tmp/hdc-sync/public",
             dc: {
                 host: "127.0.0.1",
                 port: 3306,
@@ -305,7 +339,6 @@ if (program.init) {
 
         var cfg = {
             mode: "client",
-            provCode: "44",
             server: {
                 address: "127.0.0.1",
                 port: 8888,

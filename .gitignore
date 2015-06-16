@@ -5,3 +5,5 @@ uploads
 *.log
 tmp/*
 *.yaml
+sql
+sql.zip
