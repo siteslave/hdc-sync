@@ -27,12 +27,12 @@ require('q-foreach')(Q);
 var configData = null;
 
 program
-    .version('0.1.0')
+    .version('0.1.2')
     .usage('[options] ... [file]')
     .option('-c, --config <file>', 'Specify configure file')
     .option('-t, --test', 'Testing connection')
-    .option('-s, --start <start> ', 'Start date, exp: 2014-10-01')
-    .option('-e, --end <end> ', 'End date, exp: 2014-10-01')
+    //.option('-s, --start <start> ', 'Start date, exp: 2014-10-01')
+    //.option('-e, --end <end> ', 'End date, exp: 2014-10-01')
     .option('-n, --init <client | server>', 'Initial configure file')
     .option('-u, --upload <file>', 'Upload file (Client mode)')
     .option('-i, --import <file | directory>', 'Import file (Server mode)')
@@ -126,20 +126,6 @@ if (program.config) {
                                 },
                                 debug: false
                             });
-                            //
-                            // db('sys_config')
-                            //     .select('provincecode')
-                            //     .then(function (rows) {
-                            //         console.log(rows[0].provincecode);
-                            //         process.exit(0);
-                            //     })
-                            //     .catch(function (err) {
-                            //         console.log(err);
-                            //         process.exit(0);
-                            //     });
-
-                            //console.log(typeof configData.hdc.host);
-                            //process.exit(0);
 
                             hdcExport.getProvinceCode(db)
                                 .then(function (provCode) {
@@ -248,35 +234,18 @@ if (program.config) {
                                 var cfgStartDate = configData.year[idxActiveYear].start;
                                 var cfgEndDate = configData.year[idxActiveYear].end;
 
-                                if (program.start && program.end) {
-                                    if (!moment(program.start, 'YYYY-MM-DD').isValid()) {
-                                        console.log(colors.red('Invalid start date, use default date.'));
-                                        startDate = (moment().get('year') - 1) + '-10-01';
-                                    } else {
-                                        startDate = program.start;
-                                    }
-
-                                    if (!moment(program.end, 'YYYY-MM-DD').isValid()) {
-                                        console.log(colors.red('Invalid end date, use default date.'));
-                                        endDate = moment().get('year') + '-09-30';
-                                    } else {
-                                        endDate = program.end;
-                                    }
+                                if (!moment(cfgStartDate, 'YYYY-MM-DD').isValid()) {
+                                    console.log(colors.red('Invalid start date, use default date.'));
+                                    startDate = (moment().get('year') - 1) + '-10-01';
                                 } else {
+                                    startDate = cfgStartDate;
+                                }
 
-                                    if (!moment(cfgStartDate, 'YYYY-MM-DD').isValid()) {
-                                        console.log(colors.red('Invalid start date, use default date.'));
-                                        startDate = (moment().get('year') - 1) + '-10-01';
-                                    } else {
-                                        startDate = cfgStartDate;
-                                    }
-
-                                    if (!moment(cfgEndDate, 'YYYY-MM-DD').isValid()) {
-                                        console.log(colors.red('Invalid end date, use default date.'));
-                                        endDate = moment().get('year') + '-09-30';
-                                    } else {
-                                        endDate = cfgEndDate;
-                                    }
+                                if (!moment(cfgEndDate, 'YYYY-MM-DD').isValid()) {
+                                    console.log(colors.red('Invalid end date, use default date.'));
+                                    endDate = moment().get('year') + '-09-30';
+                                } else {
+                                    endDate = cfgEndDate;
                                 }
 
                                 Sync.startSync(configData, startDate, endDate, activeYear);
