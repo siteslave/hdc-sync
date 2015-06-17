@@ -187,6 +187,7 @@ if (program.config) {
                     shell.mkdir('-p', configData.exportPath);
                     shell.mkdir('-p', configData.outboxPath);
                     shell.mkdir('-p', configData.backupPath);
+                    shell.mkdir('-p', configData.sqlPath);
                     fse.ensureFileSync(configData.logPath);
 
                     console.log(colors.green('Starting with ') + colors.red('client mode.'));
@@ -331,6 +332,7 @@ if (program.init) {
             exportPath: "./hdc-sync/export",
             backupPath: "./hdc-sync/backup",
             outboxPath: "./hdc-sync/outbox",
+            sqlPath: "./hdc-sync/sql",
             logPath: "./hdc-sync/hdc-sync.log"
 
         };
