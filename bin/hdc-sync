@@ -27,7 +27,7 @@ require('q-foreach')(Q);
 var configData = null;
 
 program
-    .version('0.1.8')
+    .version('0.1.9')
     .usage('[options] ... [file]')
     .option('-c, --config <file>', 'Specify configure file')
     .option('-t, --test', 'Testing connection')
