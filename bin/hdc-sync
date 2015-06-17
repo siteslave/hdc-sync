@@ -27,7 +27,7 @@ require('q-foreach')(Q);
 var configData = null;
 
 program
-    .version('0.1.4')
+    .version('0.1.6')
     .usage('[options] ... [file]')
     .option('-c, --config <file>', 'Specify configure file')
     .option('-t, --test', 'Testing connection')
@@ -109,12 +109,13 @@ if (program.config) {
 
                             var uploadUrl = 'http://' + address + ':' + port + '/upload';
 
+                            //typeof hdc.host == 'number'
                             var connection = {
-                                host: configData.hdc.host.toString(),
-                                port: configData.hdc.port.toString(),
-                                database: configData.hdc.database.toString(),
-                                user: configData.hdc.user.toString(),
-                                password: configData.hdc.password.toString()
+                                host: typeof configData.hdc.host == 'number' ? configData.hdc.host.toString() : configData.hdc.host,
+                                port: configData.hdc.port,
+                                database: typeof configData.hdc.database == 'number' ? configData.hdc.database.toString() : configData.hdc.database,
+                                user: typeof configData.hdc.user == 'number' ? configData.hdc.user.toString() : configData.hdc.user,
+                                password: typeof configData.hdc.password == 'number' ? configData.hdc.password.toString() : configData.hdc.password
                             };
 
                             var db = require('knex')({
@@ -279,16 +280,16 @@ if (program.init) {
             mode: "server",
             address: "127.0.0.1",
             port: 8888,
-            extractPath: "./tmp/hdc-sync/extracted",
-            uploadPath: "./tmp/hdc-sync/uploaded",
-            logPath: "./tmp/hdc-sync/hdc-sync-server.log",
-            publicPath: "./tmp/hdc-sync/public",
+            extractPath: "./hdc-sync/extracted",
+            uploadPath: "./hdc-sync/uploaded",
+            logPath: "./hdc-sync/hdc-sync-server.log",
+            publicPath: "./hdc-sync/public",
             dc: {
                 host: "127.0.0.1",
                 port: 3306,
-                database: "hdc",
-                user: "hdc",
-                password: "hdc"
+                database: "kpis",
+                user: "kpis",
+                password: "kpis"
             }
         };
 
@@ -318,7 +319,7 @@ if (program.init) {
                 port: 3306,
                 database: "hdc",
                 user: "hdc",
-                passwor: "hdc"
+                password: "hdc"
             },
             activeYear: "2558",
             year: [
@@ -327,10 +328,10 @@ if (program.init) {
                 { id: "2559", start: "2015-10-01", end: "2016-09-30" }
             ],
 
-            exportPath: "./tmp/hdc-sync/export",
-            backupPath: "./tmp/hdc-sync/backup",
-            outboxPath: "./tmp/hdc-sync/outbox",
-            logPath: "./tmp/hdc-sync/hdc-sync.log"
+            exportPath: "./hdc-sync/export",
+            backupPath: "./hdc-sync/backup",
+            outboxPath: "./hdc-sync/outbox",
+            logPath: "./hdc-sync/hdc-sync.log"
 
         };
 
