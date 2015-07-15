@@ -14,28 +14,22 @@ var _ = require('lodash');
 
 // Main Sync program
 var Sync = require('../lib/hdc-sync');
-var Server = require('../lib/server');
 var Config = require('../lib/config');
 var Conn = require('../lib/connection');
-var Importor = require('../lib/hdc-import');
 var hdcExport = require('../lib/hdc-export');
 var http = require('../lib/hdc-http');
-//var hdc = require('../lib/hdc-export');
 
 require('q-foreach')(Q);
 
 var configData = null;
 
 program
-    .version('0.1.10')
+    .version('0.2.1')
     .usage('[options] ... [file]')
     .option('-c, --config <file>', 'Specify configure file')
     .option('-t, --test', 'Testing connection')
-    //.option('-s, --start <start> ', 'Start date, exp: 2014-10-01')
-    //.option('-e, --end <end> ', 'End date, exp: 2014-10-01')
-    .option('-n, --init <client | server>', 'Initial configure file')
+    .option('-n, --init', 'Initial configure file')
     .option('-u, --upload <file>', 'Upload file (Client mode)')
-    .option('-i, --import <file | directory>', 'Import file (Server mode)')
     .parse(process.argv);
 
 if (program.config) {
@@ -169,20 +163,7 @@ if (program.config) {
                 var year = program.year || moment().get('year') + 543;
                 // Get mode
 
-                if (configData.mode == 'server') {
-                    // create default folder
-                    shell.mkdir('-p', configData.extractPath);
-                    shell.mkdir('-p', configData.uploadPath);
-
-                    if (program.import) {
-                        // Import file
-                        Importor.startImport(program.import, configData);
-                    } else {
-                        // Start server mode
-                        Server.init(configData);
-                    }
-
-                } else if (configData.mode == 'client') {
+                if (configData.mode == 'client') {
 
                     shell.mkdir('-p', configData.exportPath);
                     shell.mkdir('-p', configData.outboxPath);
@@ -262,7 +243,7 @@ if (program.config) {
                         });
 
                 } else {
-                    console.log(colors.bgBlack.red('Please set running mode!'));
+                    console.log(colors.bgBlack.red('Please set to CLIENT mode!'));
                     process.exit(1);
                 }
 
@@ -274,81 +255,46 @@ if (program.config) {
 }
 
 if (program.init) {
-    // create init config
-    if (program.init == 'server') {
 
-        var cfg = {
-            mode: "server",
+    var cfg = {
+        mode: "client",
+        server: {
             address: "127.0.0.1",
             port: 8888,
-            extractPath: "./hdc-sync/extracted",
-            uploadPath: "./hdc-sync/uploaded",
-            logPath: "./hdc-sync/hdc-sync-server.log",
-            publicPath: "./hdc-sync/public",
-            dc: {
-                host: "127.0.0.1",
-                port: 3306,
-                database: "kpis",
-                user: "kpis",
-                password: "kpis"
-            }
-        };
+            key: "1234567890"
+        },
+        hdc: {
+            host: "127.0.0.1",
+            port: 3306,
+            database: "hdc",
+            user: "hdc",
+            password: "hdc"
+        },
+        activeYear: "2558",
+        year: [
+            { id: "2557", start: "2013-10-01", end: "2014-09-30" },
+            { id: "2558", start: "2014-10-01", end: "2015-09-30" },
+            { id: "2559", start: "2015-10-01", end: "2016-09-30" }
+        ],
 
-        var cfgYaml = yaml.stringify(cfg, 4);
+        exportPath: "./hdc-sync/export",
+        backupPath: "./hdc-sync/backup",
+        outboxPath: "./hdc-sync/outbox",
+        sqlPath: "./hdc-sync/sql",
+        logPath: "./hdc-sync/hdc-sync.log"
 
-        fs.writeFile('./config-server.yaml', cfgYaml, function (err) {
-            if (err) {
-                console.log(colors.red(err));
-                process.exit(1);
-            } else {
-                console.log(colors.green('Create configure file success.'));
-                process.exit(0);
-            }
-        });
+    };
 
-    } else {
+    var cfgYaml = yaml.stringify(cfg, 4);
 
-        var cfg = {
-            mode: "client",
-            server: {
-                address: "127.0.0.1",
-                port: 8888,
-                key: "1234567890"
-            },
-            hdc: {
-                host: "127.0.0.1",
-                port: 3306,
-                database: "hdc",
-                user: "hdc",
-                password: "hdc"
-            },
-            activeYear: "2558",
-            year: [
-                { id: "2557", start: "2013-10-01", end: "2014-09-30" },
-                { id: "2558", start: "2014-10-01", end: "2015-09-30" },
-                { id: "2559", start: "2015-10-01", end: "2016-09-30" }
-            ],
-
-            exportPath: "./hdc-sync/export",
-            backupPath: "./hdc-sync/backup",
-            outboxPath: "./hdc-sync/outbox",
-            sqlPath: "./hdc-sync/sql",
-            logPath: "./hdc-sync/hdc-sync.log"
-
-        };
-
-        var cfgYaml = yaml.stringify(cfg, 4);
-
-        fs.writeFile('./config-client.yaml', cfgYaml, function (err) {
-            if (err) {
-                console.log(colors.red(err));
-                process.exit(1);
-            } else {
-                console.log(colors.green('Create configure file success.'));
-                process.exit(0);
-            }
-        });
-
-    }
+    fs.writeFile('./config-client.yaml', cfgYaml, function (err) {
+        if (err) {
+            console.log(colors.red(err));
+            process.exit(1);
+        } else {
+            console.log(colors.green('Create configure file success.'));
+            process.exit(0);
+        }
+    });
 
 }

@@ -1,6 +1,6 @@
 {
   "name": "hdc-sync",
-  "version": "0.1.10",
+  "version": "0.2.1",
   "description": "HDC Sync system",
   "main": "./lib/hdc-sync.js",
   "scripts": {
@@ -46,6 +46,7 @@
   },
   "perferGlobal": true,
   "bin": {
-    "hdc-sync": "./bin/hdc-sync"
+    "hdc-sync": "./bin/hdc-sync",
+    "hdcs": "./bin/hdc-sync"
   }
 }
