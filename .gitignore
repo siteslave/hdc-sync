@@ -6,4 +6,4 @@ uploads
 tmp/*
 *.yaml
 sql
-sql.zip
+*.zip
