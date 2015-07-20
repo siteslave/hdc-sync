@@ -8,7 +8,13 @@ Health Data Center Sync system.
 
 # Using
 
+`hds --help`
+
+or
+
 `hdc-sync --help`
+
+Basic usage:
 
 `hdc-sync --import`
 
